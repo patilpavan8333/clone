@@ -6,6 +6,7 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -15,6 +16,12 @@ pipeline {
         stage('Terraform Init') {
             steps {
                 sh 'terraform init'
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                sh 'terraform validate'
             }
         }
 
@@ -38,6 +45,27 @@ pipeline {
                     sh 'terraform apply -auto-approve'
                 }
             }
+        }
+
+        stage('Terraform Output') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds'
+                ]]) {
+                    sh 'terraform output'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'EC2 instance created successfully.'
+        }
+
+        failure {
+            echo 'Pipeline failed.'
         }
     }
 }
